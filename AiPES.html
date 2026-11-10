@@ -1,0 +1,2012 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>體重管理門診營養診斷 (PES) 與教案系統</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      font-family: 'Inter', 'Noto Sans TC', system-ui, -apple-system, sans-serif;
+    }
+    .custom-scroll::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scroll::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0fdfa',
+              100: '#ccfbf1',
+              200: '#99f6e4',
+              300: '#5eead4',
+              400: '#2dd4bf',
+              500: '#14b8a6',
+              600: '#0d9488',
+              700: '#0f766e',
+              800: '#115e59',
+              900: '#134e4a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col antialiased">
+
+  <!-- 頂部導覽列與權限設定 -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-700 to-teal-500 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+          <i data-lucide="stethoscope" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-slate-900 leading-tight tracking-tight flex items-center gap-2">
+            體重管理門診營養診斷 (PES) 與教案系統
+            <span id="roleBadge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+              <i data-lucide="shield-check" class="w-3 h-3"></i> 擁有者模式
+            </span>
+          </h1>
+          <p class="text-xs text-slate-500">臨床 NCP 標準化 × 雙重 PES 架構 × 個別化教案管理</p>
+        </div>
+      </div>
+      
+      <!-- 快捷工具與權限 -->
+      <div class="flex items-center flex-wrap gap-2">
+        <button onclick="openPermissionModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-300">
+          <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+          <span>權限/分享設定</span>
+        </button>
+        <button onclick="resetAll()" class="admin-only inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors border border-slate-200">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+          清空重填
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 訪客唯讀提示橫幅 -->
+  <div id="readonlyBanner" class="hidden bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-800">
+    <div class="max-w-7xl mx-auto w-full flex items-center justify-between">
+      <span class="flex items-center gap-2">
+        <i data-lucide="alert-circle" class="w-4 h-4 text-amber-600"></i>
+        <strong>訪客唯讀預覽模式：</strong>此模式可點選帶入產生 PES 與複製病歷，教案庫管理與自訂新增已安全鎖定。
+      </span>
+      <button onclick="promptUnlockAdmin()" class="font-bold underline hover:text-amber-950 ml-4">
+        輸入密碼解鎖編輯
+      </button>
+    </div>
+  </div>
+
+  <!-- 主版面容器 -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 w-full flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+    <!-- 左側欄位：點選與輸入操作區 (7 欄寬) -->
+    <div class="lg:col-span-7 space-y-6">
+
+      <!-- 0. 主訴與客觀資料區塊 -->
+      <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+        <div class="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 mb-3 gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-indigo-600 text-white text-xs font-bold flex items-center justify-center">0</span>
+            <div>
+              <h2 class="text-sm font-bold text-slate-800">主訴與客觀資料 (S & O Data)</h2>
+              <p class="text-[11px] text-slate-400">點選常用片語快速整理，或貼入個案詳細問診對話長文</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <button onclick="triggerAIDiagnosis()" class="px-2.5 py-1 text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg flex items-center gap-1.5 transition-all shadow-2xs active:scale-95">
+              <i data-lucide="bot" class="w-3.5 h-3.5 text-indigo-600"></i>
+              🤖 AI 評估診斷 (2)
+            </button>
+            <label class="inline-flex items-center gap-1.5 text-xs text-slate-600 cursor-pointer select-none">
+              <input type="checkbox" id="includeCCOnExport" checked onchange="updateLivePreview()" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+              <span>匯出包含此區</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2">
+          <!-- 左半：點選常用片語與整理文字框 -->
+          <div class="flex flex-col">
+            <div class="text-[11px] font-semibold text-slate-500 mb-1 flex items-center gap-1">
+              <i data-lucide="sparkles" class="w-3 h-3 text-indigo-500"></i>
+              常用片語 (點選帶入整理框)：
+            </div>
+            <div id="ccoChipsContainer" class="flex flex-wrap gap-1 max-h-28 overflow-y-auto custom-scroll p-1.5 bg-slate-50 rounded-lg border border-slate-100 mb-1.5">
+              <!-- 動態產生片語按鈕 -->
+            </div>
+            <textarea id="chiefComplaintInput" rows="3" placeholder="點選上方片語或整理個案飲食生活作息..." class="w-full text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none custom-scroll resize-y" oninput="updateLivePreview()">三餐進食時間不固定；以外食居多；多吃肉類食物、多食高油脂食物(油炸/肥肉)；少蔬菜(<1-2份/天)、少水果；每日至少1杯含糖手搖飲。</textarea>
+          </div>
+
+          <!-- 右半：S 主訴詳細問診對話貼上框 -->
+          <div class="flex flex-col">
+            <div class="text-[11px] font-semibold text-slate-500 mb-1 flex items-center justify-between">
+              <span class="flex items-center gap-1">
+                <i data-lucide="message-square-quote" class="w-3 h-3 text-indigo-500"></i>
+                S 主訴詳細問診/病史長文貼上框：
+              </span>
+              <span class="text-[10px] text-indigo-600">供 AI 分析 P2</span>
+            </div>
+            <textarea id="rawDialogInput" rows="5" placeholder="可將門診深談中個案自述飲食習慣、上班久坐、宵夜甜食、暴食心理或用藥史等對話長文直接貼入此處..." class="w-full h-full min-h-[115px] text-xs px-2.5 py-1.5 border border-indigo-200 bg-indigo-50/20 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none custom-scroll resize-y" oninput="autoSuggestAI()"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- 1. 體位評估計算器 -->
+      <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-teal-100 text-teal-800 text-xs font-bold flex items-center justify-center">1</span>
+            <h2 class="text-sm font-bold text-slate-800">體位評估計算器 (國健署成人標準)</h2>
+          </div>
+          <span class="text-xs text-brand-700 font-medium">連動病歷第 1 欄與 S (徵候)</span>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">身高 (cm)</label>
+            <input type="number" id="inputHeight" placeholder="例如 160" value="160" class="w-full text-sm px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none" oninput="calcBMI()">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">體重 (kg)</label>
+            <input type="number" id="inputWeight" placeholder="例如 58.6" value="58.6" class="w-full text-sm px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none" oninput="calcBMI()">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">BMI 數值</label>
+            <input type="text" id="calculatedBMI" readonly placeholder="--" value="22.9" class="w-full text-sm font-semibold px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-brand-800 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-600 mb-1">體位分級</label>
+            <div id="bmiStatusBadge" class="w-full text-xs font-bold py-2 px-2.5 rounded-lg text-center bg-emerald-100 text-emerald-900 border border-emerald-300 truncate">
+              正常 (BMI: 22.9)
+            </div>
+          </div>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs">
+          <span class="text-slate-500 flex items-center gap-1">
+            <i data-lucide="info" class="w-3.5 h-3.5 text-teal-600"></i>
+            目前判定：<strong id="assessmentSummaryText" class="text-slate-700 font-semibold">1.體位評估:正常,BMI：22.9</strong>
+          </span>
+          <button type="button" onclick="applyBMIToSigns()" class="px-2.5 py-1 text-xs font-medium text-teal-700 hover:text-teal-900 bg-teal-50 hover:bg-teal-100 rounded-md border border-teal-200 flex items-center gap-1 transition-colors">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            一鍵帶入 S (徵候)
+          </button>
+        </div>
+      </section>
+
+      <!-- 2. 營養診斷問題 (P1 - 營養師自選) 選擇區 -->
+      <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 mb-4">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-brand-700 text-white text-xs font-bold flex items-center justify-center">2</span>
+            <div>
+              <h2 class="text-sm font-bold text-slate-800">選擇營養診斷問題 (1) [自選 P]</h2>
+              <p class="text-[11px] text-slate-400">嚴格依 NB (行為環境) 置頂，點選自動連動對應 E、S 與營養計畫</p>
+            </div>
+          </div>
+
+          <!-- 分類切換標籤 -->
+          <div class="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-xs">
+            <button onclick="setDomainFilter('ALL')" id="filterDomainALL" class="px-2.5 py-1 rounded-md font-bold text-brand-800 bg-white shadow-xs">全部</button>
+            <button onclick="setDomainFilter('NB')" id="filterDomainNB" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">NB 行為環境</button>
+            <button onclick="setDomainFilter('NI')" id="filterDomainNI" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">NI 攝入領域</button>
+            <button onclick="setDomainFilter('NC')" id="filterDomainNC" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900">NC 臨床領域</button>
+          </div>
+        </div>
+
+        <!-- 搜尋框 -->
+        <div class="relative mb-3">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+          <input type="text" id="pSearchInput" placeholder="搜尋問題關鍵字 (如: 知識不足、碳水化合物、脂肪、纖維、體重過輕、活動不足...)" 
+                 class="w-full pl-9 pr-3 py-2 text-xs sm:text-sm border border-slate-200 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                 oninput="filterPList()">
+        </div>
+
+        <!-- P 診斷卡片容器 (格狀) -->
+        <div id="pCardsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto pr-1 custom-scroll">
+          <!-- 動態載入 P 卡片 -->
+        </div>
+      </section>
+
+      <!-- 2-E. 病因 (Etiology, E) 點選帶入區 -->
+      <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-amber-600 text-white text-xs font-bold flex items-center justify-center">E</span>
+            <div>
+              <h2 class="text-sm font-bold text-slate-800">病因/機轉 (Etiology, E)</h2>
+              <p class="text-[11px] text-slate-400">點選直接勾選帶入（支援多選），下方可新增自訂項目</p>
+            </div>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 font-medium">Related to</span>
+        </div>
+
+        <!-- E 標籤容器 -->
+        <div id="eChipsContainer" class="flex flex-wrap gap-2 mb-3 min-h-[48px] items-center">
+          <span class="text-xs text-slate-400 italic">載入中...</span>
+        </div>
+
+        <!-- 新增自訂 E -->
+        <div class="pt-2 border-t border-slate-100 flex gap-2 admin-only-flex">
+          <input type="text" id="customEInput" placeholder="自訂或增補其他病因描述..." class="flex-1 text-xs sm:text-sm px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-amber-500 focus:outline-none" onkeydown="if(event.key==='Enter') addCustomE()">
+          <button onclick="addCustomE()" class="px-3.5 py-2 text-xs font-semibold bg-amber-50 text-amber-900 border border-amber-300 rounded-xl hover:bg-amber-100 flex items-center gap-1 transition-colors">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            加入E
+          </button>
+        </div>
+      </section>
+
+      <!-- 2-S. 徵候與症狀 (Signs & Symptoms, S) 點選帶入區 -->
+      <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-blue-600 text-white text-xs font-bold flex items-center justify-center">S</span>
+            <div>
+              <h2 class="text-sm font-bold text-slate-800">徵候與症狀 (Signs & Symptoms, S)</h2>
+              <p class="text-[11px] text-slate-400">包含建議需求量%、飲食頻率、生化指標等，點選直接帶入</p>
+            </div>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 font-medium">As evidenced by</span>
+        </div>
+
+        <!-- S 標籤容器 -->
+        <div id="sChipsContainer" class="flex flex-wrap gap-2 mb-3 min-h-[48px] items-center">
+          <span class="text-xs text-slate-400 italic">載入中...</span>
+        </div>
+
+        <!-- 新增自訂 S -->
+        <div class="pt-2 border-t border-slate-100 flex gap-2 admin-only-flex">
+          <input type="text" id="customSInput" placeholder="自訂數據/徵候 (例: 熱量達建議量140%、炸物每週>4次)..." class="flex-1 text-xs sm:text-sm px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none" onkeydown="if(event.key==='Enter') addCustomS()">
+          <button onclick="addCustomS()" class="px-3.5 py-2 text-xs font-semibold bg-blue-50 text-blue-900 border border-blue-300 rounded-xl hover:bg-blue-100 flex items-center gap-1 transition-colors">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            加入S
+          </button>
+        </div>
+      </section>
+
+      <!-- 3. 營養計畫 (Plan / Intervention) 點選與教案管理區 -->
+      <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 relative">
+        <div class="flex flex-wrap items-center justify-between pb-3 border-b border-slate-100 mb-3 gap-2">
+          <div class="flex items-center gap-2">
+            <span class="w-6 h-6 rounded-md bg-emerald-600 text-white text-xs font-bold flex items-center justify-center">3</span>
+            <div>
+              <h2 class="text-sm font-bold text-slate-800">3. 營養計畫 (Plan / Intervention)</h2>
+              <p class="text-[11px] text-slate-400">依當前自選診斷 (1) 與 AI診斷 (2) 智慧整合推薦減重/增重高執行度對策</p>
+            </div>
+          </div>
+
+          <!-- 教案庫管理按鈕 (擁有者模式專屬) -->
+          <div class="flex items-center gap-2">
+            <button onclick="openPlanManagerModal()" class="admin-only inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 rounded-lg transition-all shadow-xs active:scale-95">
+              <i data-lucide="edit-3" class="w-3.5 h-3.5 text-emerald-600"></i>
+              ✏️ 修改/管理教案庫
+            </button>
+            <span class="text-xs px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">Intervention</span>
+          </div>
+        </div>
+
+        <!-- 計畫標籤容器 -->
+        <div id="planChipsContainer" class="flex flex-wrap gap-2 mb-3 min-h-[48px] items-center">
+          <span class="text-xs text-slate-400 italic">載入中...</span>
+        </div>
+
+        <!-- 新增自訂計畫 -->
+        <div class="pt-2 border-t border-slate-100 flex gap-2 admin-only-flex">
+          <input type="text" id="customPlanInput" placeholder="自訂本次計畫項目 (例: 睡前3小時禁食、換用無糖燕麥奶)..." class="flex-1 text-xs sm:text-sm px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:outline-none" onkeydown="if(event.key==='Enter') addCustomPlan()">
+          <button onclick="addCustomPlan()" class="px-3.5 py-2 text-xs font-semibold bg-emerald-50 text-emerald-900 border border-emerald-300 rounded-xl hover:bg-emerald-100 flex items-center gap-1 transition-colors">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            加入計畫
+          </button>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 右側欄位：即時編輯與指定病歷輸出控制台 (5 欄寬) -->
+    <div class="lg:col-span-5 space-y-6">
+
+      <!-- 病歷輸出與直接貼上卡片 (置頂浮動) -->
+      <div class="bg-white rounded-2xl border-2 border-brand-600 shadow-md p-4 sm:p-5 space-y-4 sticky top-20">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+          <div class="flex items-center gap-2">
+            <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+            <h2 class="text-sm font-bold text-slate-900">門診病歷指定倒出格式</h2>
+          </div>
+          <span class="text-[10px] bg-brand-50 text-brand-800 border border-brand-200 px-2 py-0.5 rounded-full font-semibold">雙診斷整合輸出</span>
+        </div>
+
+        <!-- 主格式預覽區塊 (深色終端風格) -->
+        <div class="p-4 bg-slate-900 text-slate-100 rounded-xl shadow-inner relative group">
+          <div class="flex items-center justify-between mb-2 pb-2 border-b border-slate-800">
+            <span class="text-xs font-medium text-emerald-400 flex items-center gap-1">
+              <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+              可直接貼上病歷系統格式
+            </span>
+            <button onclick="copyClinicFormat()" class="px-2.5 py-1 text-xs font-bold text-slate-900 bg-emerald-400 hover:bg-emerald-300 rounded-lg shadow-sm flex items-center gap-1 transition-all active:scale-95">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+              一鍵複製病歷
+            </button>
+          </div>
+          <pre id="previewClinicFormat" class="text-xs sm:text-sm font-mono leading-relaxed whitespace-pre-wrap select-all text-emerald-200">--</pre>
+        </div>
+
+        <!-- 即時微調編輯器 (與左側點選同步) -->
+        <div class="space-y-3 pt-2">
+          <div class="flex items-center justify-between">
+            <h3 class="text-xs font-bold text-slate-700 flex items-center gap-1">
+              <i data-lucide="sliders" class="w-3.5 h-3.5 text-slate-500"></i>
+              微調文字內容 (點選標籤或直接編輯)
+            </h3>
+            <button onclick="clearCurrentSelection()" class="text-[11px] text-rose-600 hover:underline">
+              清空本筆勾選
+            </button>
+          </div>
+
+          <!-- PES 1: 自選診斷編輯 -->
+          <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-brand-900 flex items-center gap-1">
+                <span class="w-4 h-4 rounded-full bg-brand-700 text-white text-[10px] flex items-center justify-center font-bold">1</span>
+                自選營養診斷 (1)
+              </span>
+              <span id="pCodeLabel" class="text-[10px] font-mono text-brand-800 bg-brand-100 px-1.5 py-0.5 rounded border border-brand-200">NB-1.1</span>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-slate-700">P - 名稱</label>
+              <input type="text" id="editorP" class="w-full text-xs font-medium px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-amber-900">E - 病因敘述</label>
+              <textarea id="editorE" rows="2" class="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none custom-scroll resize-y"></textarea>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-blue-900">S - 徵候/症狀</label>
+              <textarea id="editorS" rows="2" class="w-full text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none custom-scroll resize-y"></textarea>
+            </div>
+          </div>
+
+          <!-- PES 2: AI 推論診斷編輯 -->
+          <div class="p-3 bg-indigo-50/50 rounded-xl border border-indigo-200 space-y-2">
+            <div class="flex justify-between items-center">
+              <span class="text-xs font-bold text-indigo-900 flex items-center gap-1">
+                <span class="w-4 h-4 rounded-full bg-indigo-700 text-white text-[10px] flex items-center justify-center font-bold">2</span>
+                營養診斷 (2)
+              </span>
+              <div class="flex items-center gap-1.5">
+                <label class="inline-flex items-center gap-1 text-[11px] text-indigo-900 cursor-pointer select-none">
+                  <input type="checkbox" id="enablePES2Checkbox" checked onchange="togglePES2State()" class="rounded border-indigo-300 text-indigo-600">
+                  <span>啟用第二診斷</span>
+                </label>
+              </div>
+            </div>
+            <div>
+              <div class="flex justify-between items-center mb-0.5">
+                <label class="text-[11px] font-bold text-slate-700">P - 名稱 (可切換或由AI推薦)</label>
+                <select id="p2Selector" onchange="onP2SelectChange(this.value)" class="text-[11px] bg-white border border-indigo-200 rounded px-1.5 py-0.5 text-indigo-900 focus:outline-none">
+                  <!-- 動態填入選項 -->
+                </select>
+              </div>
+              <input type="text" id="editorP2" class="w-full text-xs font-medium px-2.5 py-1.5 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-amber-900">E - 病因敘述</label>
+              <textarea id="editorE2" rows="2" class="w-full text-xs px-2.5 py-1.5 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-amber-500 focus:outline-none custom-scroll resize-y"></textarea>
+            </div>
+            <div>
+              <label class="text-[11px] font-bold text-blue-900">S - 徵候/症狀</label>
+              <textarea id="editorS2" rows="2" class="w-full text-xs px-2.5 py-1.5 bg-white border border-indigo-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none custom-scroll resize-y"></textarea>
+            </div>
+          </div>
+
+          <!-- 編輯 計畫 -->
+          <div>
+            <div class="flex justify-between items-center mb-1">
+              <label class="text-[11px] font-bold text-emerald-900">3. 營養計畫內容 (每項一行，開頭自動加「- 」)</label>
+              <span class="text-[10px] text-slate-400">依 PES1 與 PES2 彙整</span>
+            </div>
+            <textarea id="editorPlan" rows="4" class="w-full text-xs px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none custom-scroll resize-y font-mono"></textarea>
+          </div>
+        </div>
+
+        <!-- 備用格式：標準敘述型 -->
+        <details class="text-xs border border-slate-200 rounded-lg p-2.5 bg-slate-50">
+          <summary class="font-medium text-slate-600 cursor-pointer flex items-center justify-between">
+            <span>展開備用格式：標準敘述句 (P related to E as evidenced by S)</span>
+            <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-slate-400"></i>
+          </summary>
+          <div class="mt-2 pt-2 border-t border-slate-200 space-y-2">
+            <p id="previewFormatA" class="text-xs text-slate-700 leading-relaxed font-sans bg-white p-2 rounded border border-slate-200">
+              --
+            </p>
+            <button onclick="copyFormatA()" class="w-full py-1.5 px-3 text-xs font-medium text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg flex items-center justify-center gap-1.5">
+              <i data-lucide="copy" class="w-3 h-3"></i>
+              複製標準敘述句
+            </button>
+          </div>
+        </details>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- 彈跳視窗：修改/管理教案庫 (Plan Template Manager) -->
+  <div id="planManagerModalBackdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden transition-opacity" onclick="closePlanManagerModal()"></div>
+  <div id="planManagerModal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-2xl shadow-2xl z-50 p-6 hidden max-h-[90vh] flex flex-col">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+          <i data-lucide="book-open" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h3 class="text-sm sm:text-base font-bold text-slate-900">教案庫彈性管理與修改</h3>
+          <p class="text-xs text-slate-500">目前針對：<span id="modalCurrentPName" class="font-bold text-brand-800">--</span></p>
+        </div>
+      </div>
+      <button onclick="closePlanManagerModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <!-- 教案清單編輯列表 -->
+    <div class="py-4 flex-1 overflow-y-auto space-y-3 custom-scroll">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-700">推薦教案清單 (可直接修改文字或刪除)：</span>
+        <button onclick="addNewPlanItemInModal()" class="px-2.5 py-1 text-xs font-semibold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-lg border border-emerald-300 flex items-center gap-1">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> 新增一筆教案
+        </button>
+      </div>
+
+      <div id="modalPlanItemsList" class="space-y-2">
+        <!-- 動態渲染可編輯輸入框 -->
+      </div>
+    </div>
+
+    <!-- 底部按鈕 -->
+    <div class="pt-3 border-t border-slate-200 flex items-center justify-between bg-slate-50 -mx-6 -mb-6 p-4 rounded-b-2xl">
+      <button onclick="restoreDefaultPlansForCurrentP()" class="text-xs text-slate-500 hover:text-rose-600 underline">
+        還原此問題為系統預設教案
+      </button>
+      <div class="flex gap-2">
+        <button onclick="closePlanManagerModal()" class="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-200 rounded-xl">
+          取消
+        </button>
+        <button onclick="saveModalPlanChanges()" class="px-4 py-2 text-xs font-bold bg-brand-700 hover:bg-brand-800 text-white rounded-xl shadow-sm flex items-center gap-1.5">
+          <i data-lucide="save" class="w-3.5 h-3.5"></i>
+          儲存並更新教案庫
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 彈跳視窗：權限與分享管理 -->
+  <div id="permissionModalBackdrop" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden transition-opacity" onclick="closePermissionModal()"></div>
+  <div id="permissionModal" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-2xl shadow-2xl z-50 p-6 hidden flex flex-col space-y-4">
+    <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-lg bg-brand-100 text-brand-800 flex items-center justify-center font-bold">
+          <i data-lucide="shield" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-slate-900">權限控制與唯讀分享</h3>
+          <p class="text-xs text-slate-500">保護教案庫，避免他人擅自修改破壞內容</p>
+        </div>
+      </div>
+      <button onclick="closePermissionModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
+    </div>
+
+    <!-- 狀態資訊 -->
+    <div class="space-y-3">
+      <div class="p-3 border rounded-xl flex items-center justify-between bg-slate-50">
+        <div>
+          <div class="text-xs font-bold text-slate-800">目前運作狀態</div>
+          <div id="currentModeStatusText" class="text-xs font-semibold text-emerald-600 flex items-center gap-1 mt-0.5">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i> 擁有者完整權限模式
+          </div>
+        </div>
+        <button onclick="toggleAppMode()" id="toggleModeBtn" class="px-3 py-1.5 text-xs font-bold rounded-lg border transition-colors bg-white hover:bg-slate-100 text-slate-700 border-slate-300">
+          切換為唯讀訪客
+        </button>
+      </div>
+
+      <!-- 產生唯讀分享連結 -->
+      <div class="p-3 border border-slate-200 rounded-xl space-y-2 bg-slate-50/60">
+        <div class="text-xs font-bold text-slate-700 flex items-center gap-1">
+          <i data-lucide="share-2" class="w-3.5 h-3.5 text-brand-600"></i>
+          分享給他人之「唯讀連結」
+        </div>
+        <p class="text-[11px] text-slate-500">他人開啟將強制鎖定為唯讀模式，只能點選帶入產生 PES 與複製病歷，無權限修改教案庫。</p>
+        <div class="flex gap-2">
+          <input type="text" id="readonlyShareUrl" readonly class="flex-1 text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg text-slate-600 select-all font-mono">
+          <button onclick="copyReadonlyShareLink()" class="px-3 py-1.5 text-xs font-bold bg-brand-700 hover:bg-brand-800 text-white rounded-lg flex items-center gap-1">
+            <i data-lucide="copy" class="w-3 h-3"></i> 複製連結
+          </button>
+        </div>
+      </div>
+
+      <!-- 密碼修改 -->
+      <div class="p-3 border border-slate-200 rounded-xl space-y-2 bg-slate-50/60">
+        <div class="text-xs font-bold text-slate-700 flex items-center gap-1">
+          <i data-lucide="key" class="w-3.5 h-3.5 text-amber-600"></i>
+          擁有者解鎖密碼 (預設: 19920827)
+        </div>
+        <div class="flex gap-2">
+          <input type="password" id="newMasterPasswordInput" placeholder="輸入新密碼..." class="flex-1 text-xs px-2.5 py-1.5 bg-white border border-slate-200 rounded-lg">
+          <button onclick="updateMasterPassword()" class="px-3 py-1.5 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-lg">
+            變更密碼
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 底部關閉 -->
+    <div class="pt-3 border-t border-slate-200 flex justify-end">
+      <button onclick="closePermissionModal()" class="px-4 py-2 text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white rounded-xl">
+        關閉
+      </button>
+    </div>
+  </div>
+
+  <!-- 浮動提示訊息 (Toast) -->
+  <div id="toastMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs sm:text-sm px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 transition-all duration-300 opacity-0 pointer-events-none translate-y-3 z-50">
+    <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+    <span id="toastText">已複製至剪貼簿！</span>
+  </div>
+
+  <!-- 核心醫學邏輯與互動腳本 -->
+  <script>
+    /**
+     * 臨床標準營養診斷 (PES) 資料庫
+     * 嚴格排序：NB (行為-環境領域) 置頂第一優先，其次為 NI (攝入領域)，最後為 NC (臨床領域)
+     */
+    const BASE_PES_DATABASE = [
+      // ==========================================
+      // [NB 領域] 行為-環境領域 (置頂優先)
+      // ==========================================
+      {
+        id: "nb-knowledge-deficit",
+        domain: "NB",
+        code: "NB-1.1",
+        name: "食物與營養相關知識不足",
+        defaultE: [
+          "未接受過飲食衛教",
+          "過去接受錯誤網路/社群減重訊息",
+          "不確定如何將營養指南應用於外食與備餐",
+          "對三大營養素熱量密度缺乏認知",
+          "無法正確辨識食品營養標示與隱形糖份",
+          "缺乏份量代換概念 (如誤認水果無熱量可多吃)"
+        ],
+        defaultS: [
+          "未接受過相關食物營養之建議",
+          "口述知識不準確或不完整",
+          "熱量攝取達建議需求量150%",
+          "每天飲用含糖飲料或攝取高糖點心而不自覺",
+          "誤將高油炸物視為純優質蛋白質來源",
+          "減重期間採用極端斷食但復食觀念錯誤"
+        ],
+        defaultPlans: [
+          "建議增加水量每天3000C.C以上 (起床先飲用500c.c.溫水促進代謝)",
+          "加強建議超慢跑40-50分/次180bpm或 早上HIIT 15分/次，每周5天",
+          "阻力運動每周2~3天(不連續，如彈力帶或大肌群深蹲、核心預防肌流失)",
+          "給周計畫表紀錄，下次帶回門診(助了解體重變化與飲食遵從度)",
+          "實施「211餐盤」視覺化比例教學：蔬菜2:蛋白質1:全穀1",
+          "衛教食物順序：先喝清湯或水 ➜ 優質蛋白質 ➜ 大量蔬菜 ➜ 最後全穀澱粉",
+          "指導看懂包裝營養標示與成分表，辨別「精緻糖份」與「隱形反式脂肪」"
+        ]
+      },
+      {
+        id: "nb-food-choice-undesirable",
+        domain: "NB",
+        code: "NB-1.5",
+        name: "食物選擇不理想",
+        defaultE: [
+          "外食與社交應酬環境限制、習慣性選擇高油高澱粉菜色",
+          "個人食物喜好偏差，習慣選擇油炸物、肥肉或精緻糕點",
+          "極端節食後的代償補償心理，引發報復性高糖/高油進食",
+          "自覺缺乏備餐資源或外食健康管道受限",
+          "缺乏施行或支持健康生活型態改變之動機",
+          "習慣以甜點手搖飲作為主要工作抒壓途徑"
+        ],
+        defaultS: [
+          "每週吃油炸物或精緻甜點>3次",
+          "每天至少1杯含糖手搖飲",
+          "熱量攝取達建議需求量140%",
+          "對國人飲食指南了解不完全及不正確",
+          "體重持續增加或減重停滯不前",
+          "血脂肪檢驗異常 (TG或LDL偏高)"
+        ],
+        defaultPlans: [
+          "建議增加水量每天3000C.C以上 (外食或欲喝手搖飲前先喝500c.c.水增加飽足)",
+          "戒除精緻含糖飲料，階段性改為無糖綠茶、氣泡水或黑咖啡",
+          "每週油炸物限制降至1次以下，並主動去炸皮、去肥肉進食",
+          "加強建議超慢跑40-50分/次180bpm或 早上HIIT 15分/次，每周5天",
+          "阻力運動每周2~3天(不連續)",
+          "給周計畫表紀錄，下次帶回門診(助了解體重變化)",
+          "正餐強制執行211餐盤外食挑選法 (便當挑選3樣少油蔬菜、滷烤蛋白質)"
+        ]
+      },
+      {
+        id: "nb-physical-inactivity",
+        domain: "NB",
+        code: "NB-2.1",
+        name: "體能活動不足",
+        defaultE: [
+          "長時間靜態工作型態 (如長時間久坐辦公室)",
+          "對於體能活動與運動消耗認知錯誤",
+          "缺乏運動動機或時間管理不良",
+          "缺乏執行行為改變的社會支持或同伴",
+          "關節疼痛或體重過重引起身體負擔限制活動",
+          "日常交通完全依賴汽機車，極少步行"
+        ],
+        defaultS: [
+          "體能活動頻率少、持續性差 (<3次/週、<30分/次)",
+          "每週中等強度運動未達建議150分鐘",
+          "日常步數每日未達 4,000 步",
+          "基礎代謝率低下且體脂率超標",
+          "骨骼肌量檢測呈現偏低/不足",
+          "輕度肥胖 (BMI=28.5) 且活動耐受度差"
+        ],
+        defaultPlans: [
+          "加強建議超慢跑40-50分/次180bpm或 早上HIIT 15分/次，每周5天",
+          "阻力運動每周2~3天(不連續，深蹲、臀橋、彈力帶，防代謝低下)",
+          "日常活動增量：每日步行步數目標達 8,000 步以上，工作久坐每50分起身走動",
+          "建議增加水量每天3000C.C以上 (運動前後分段補足500c.c.)",
+          "給周計畫表紀錄，下次帶回門診(助了解體重變化與每日步數/運動紀錄)",
+          "運動後補充「蛋白質20g + 少量低GI碳水」(如無糖豆漿1瓶+香蕉半根)"
+        ]
+      },
+      {
+        id: "nb-not-ready",
+        domain: "NB",
+        code: "NB-1.3",
+        name: "未準備好施行飲食/生活型態改變",
+        defaultE: [
+          "對於改變現有生活習慣缺乏自覺與意願",
+          "自認減重難度過高，缺乏自我效能感",
+          "過往反覆減重失敗導致挫折感與習得無助",
+          "家人或同住者不支持飲食調整",
+          "目前生活面臨重大工作或家庭壓力，無暇顧及飲食",
+          "尚未意識到肥胖對慢性病風險之嚴重性"
+        ],
+        defaultS: [
+          "口述表示目前無法配合定時定量飲食",
+          "對於記錄飲食日誌態度消極或拒絕配合",
+          "熱量攝取估算超過建議需求量130%",
+          "體重持續增加且無規律運動習慣",
+          "回診未達預期設定之生活型態目標",
+          "經常因社交外食輕易放棄飲食原則"
+        ],
+        defaultPlans: [
+          "建立最小可行性微習慣：先設定每週「含糖飲料減半」或「每週1天無炸物」小目標",
+          "給周計畫表紀錄，只需拍照紀錄每日三餐照片，下次帶回門診(助了解體重變化)",
+          "先從達成水分每天2000-3000C.C.做起，建立自我效能感",
+          "建議每天快走或超慢跑15-20分/次，逐步建立活動習慣",
+          "阻力運動每周2~3天(不連續，簡易徒手肌力)"
+        ]
+      },
+      {
+        id: "nb-inappropriate-food-selection",
+        domain: "NB",
+        code: "NB-1.7",
+        name: "選擇不適當之食物",
+        defaultE: [
+          "習慣性睡前宵夜進食高熱量食物",
+          "以高糖高脂零食取代正餐",
+          "常態性飲用含糖紅茶、奶茶或碳酸飲料",
+          "偏好勾芡、濃湯、加工肉品等高熱量密度食物",
+          "聚餐時難以抗拒高脂醬料與吃到飽進食模式",
+          "誤將高糖果乾、堅果飲當作低卡健康零嘴大量食用"
+        ],
+        defaultS: [
+          "每週食用宵夜頻率 ≥ 3 次",
+          "每天至少飲用 1~2 杯含糖手搖飲",
+          "每週食用油炸物或精緻點心 > 4 次",
+          "醣類與脂肪攝取比例顯著偏高",
+          "估算每日總熱量攝取達建議需求量 140%",
+          "內臟脂肪等級偏高 (≥ 10)"
+        ],
+        defaultPlans: [
+          "設定「睡前3-4小時空腹原則」，宵夜若飢餓僅以無糖溫豆漿或小黃瓜替代",
+          "建議增加水量每天3000C.C以上 (想吃零食時先喝300c.c.水消除假性飢餓)",
+          "加強建議超慢跑40-50分/次180bpm或 早上HIIT 15分/次，每周5天",
+          "阻力運動每周2~3天(不連續)",
+          "外食避開羹湯、勾芡與白醬焗烤，改點清湯、烤物、蒸煮料理",
+          "給周計畫表紀錄，下次帶回門診(助了解體重變化與飲食項目)"
+        ]
+      },
+
+      // ==========================================
+      // [NI 領域] 攝入領域
+      // ==========================================
+      {
+        id: "ni-oral-excess",
+        domain: "NI",
+        code: "NI-2.2",
+        name: "經口攝取過多",
+        defaultE: [
+          "缺乏控制食慾的自覺",
+          "情緒性進食 (壓力、焦慮或犒賞心理)",
+          "高熱量飲食習慣與大份量進食型態",
+          "外食或吃到飽頻率過高",
+          "對於同住家人或朋友贈與的食物缺乏拒絕能力",
+          "進食速度過快 (少於15分鐘完成一餐)，飽足感未達"
+        ],
+        defaultS: [
+          "熱量攝取達建議需求量150%",
+          "重度肥胖 (BMI ≥ 35)",
+          "中度肥胖 (BMI ≥ 30)",
+          "攝取大量食物與含糖飲品，熱量估算超過需要量130%",
+          "速食或外食頻率每週 > 5 次",
+          "體脂肪率顯著超標且體重持續攀升"
+        ],
+        defaultPlans: [
+          "建議增加水量每天3000C.C以上 (餐前15分鐘強制飲用400-500c.c.水減低食量)",
+          "執行「正念慢食法」：每口細嚼20下，拉長用餐時間至25分鐘以上使飽足訊號傳遞",
+          "正餐採用分盤定量 (211餐盤)，避免直接食用大碗公或整袋外食",
+          "加強建議超慢跑40-50分/次180bpm或 早上HIIT 15分/次，每周5天",
+          "阻力運動每周2~3天(不連續，促進葡萄糖轉化與能量消耗)",
+          "給周計畫表紀錄，下次帶回門診(助了解體重變化)"
+        ]
+      },
+      {
+        id: "ni-oral-inadequate",
+        domain: "NI",
+        code: "NI-2.1",
+        name: "經口攝取不足",
+        defaultE: [
+          "減重藥物 (如GLP-1 RA、腸泌素針劑) 作用導致胃口嚴重低下",
+          "刻意壓抑食慾與對食物產生排斥恐懼感",
+          "採取極端低碳水化合物或極低熱量飲食 (<800大卡/天)",
+          "害怕復胖因而過度限制每餐進食份量",
+          "噁心、便秘、消化不良等腸胃道不適",
+          "跳過正餐不吃導致進食總量匱乏"
+        ],
+        defaultS: [
+          "估算熱量攝取未達建議需求量60%",
+          "每日熱量攝取未達基礎代謝率 (BMR)",
+          "頻繁感到疲倦無力、頭暈不適",
+          "伴隨嚴重排便困難與慣性便秘",
+          "BIA身體組成檢測顯示肌肉量明顯流失",
+          "進食份量低於正常餐食之 1/2"
+        ],
+        defaultPlans: [
+          "採少量多餐策略 (每日4-5餐)，優先攝取高營養密度且易消化蛋白質 (蒸蛋、豆腐、鱸魚)",
+          "確保每日最低熱量不低於基礎代謝率 (BMR)，預防甲狀腺素下降與肌肉萎縮",
+          "阻力運動每周2~3天(不連續，低強度肌力維持骨骼肌量)",
+          "溫水少量多次補充達每天2000-2500C.C.，緩解腸胃道不適與便秘",
+          "超慢跑20-30分/次180bpm，促進血液循環改善疲倦感",
+          "給周計畫表紀錄，下次帶回門診(助了解體重變化與實際熱量達成率)"
+        ]
+      },
+      {
+        id: "ni-carb-excess",
+        domain: "NI",
+        code: "NI-5.8.2",
+        name: "碳水化合物攝取過多",
+        defaultE: [
+          "個人飲食喜好偏差 (偏好含糖紅茶、綠茶或手搖飲)",
+          "正餐主食以大量精緻白米、麵條為主且份量失控",
+          "頻繁攝取精緻甜點、麵包、蛋糕或餅乾",
+          "誤將根莖類澱粉 (地瓜、南瓜、芋頭) 當蔬菜無限食用",
+          "缺乏碳水化合物與糖分代換之認知",
+          "工作壓力依賴高糖食品獲取即時慰藉"
+        ],
+        defaultS: [
+          "醣類攝取量高於建議量 (佔總熱量 > 65%)",
+          "熱量攝取達建議需求量130%",
+          "每天至少飲用 1 杯以上含糖手搖杯",
+          "精緻甜點或糕餅每週食用 > 3 次",
+          "空腹血糖或糖化血色素 (HbA1c) 偏高",
+          "內臟脂肪等級偏高且腹部脂肪堆積明顯"
+        ],
+        defaultPlans: [
+          "主食精緻澱粉減半，以糙米、燕麥、地瓜或南瓜等未精緻全穀雜糧類代換",
+          "嚴格戒除手搖含糖飲料，改飲用白開水、黑咖啡、無糖茶",
+          "進食順序調整：蛋白質/蔬菜先吃，全穀澱粉放到最後吃，減緩血糖波動與胰島素分泌",
+          "建議增加水量每天3000C.C以上",
+          "加強建議超慢跑40-50分/次180bpm或 早上HIIT 15分/次，每周5天",
+          "阻力運動每周2~3天(不連續)",
+          "給周計畫表紀錄，下次帶回門診(助了解體重變化)"
+        ]
+      },
+      {
+        id: "ni-fat-excess",
+        domain: "NI",
+        code: "NI-5.6.2",
+        name: "脂肪攝取過多",
+        defaultE: [
+          "對於適當脂肪攝取之食物與營養相關知識不足",
+          "偏好油炸食物 (經常食用炸排骨、炸雞排)",
+          "經常挑選高脂肉類部位 (三層五花、雪花和牛、培根、香腸)",
+          "外食快炒烹調用油過量或習慣拌湯汁肉燥",
+          "大量食用高油脂烘焙食品 (牛角麵包、酥皮濃湯、曲奇餅乾)",
+          "常以高油脂沾醬 (美乃滋、沙茶醬、凱薩醬) 調味"
+        ],
+        defaultS: [
+          "經常大量攝取高脂肪食物 (每週食用10次以上的油炸豬排或雞排)",
+          "每週食用油炸物 > 3 次",
+          "總脂肪供熱比估算 > 35-40% 總熱量",
+          "血脂肪異常 (三酸甘油酯TG過高、LDL-C過高)",
+          "超音波檢查顯示中至重度脂肪肝",
+          "熱量攝取達建議需求量140%"
+        ],
+        defaultPlans: [
+          "每週油炸物限制降至 1 次以下 (必要時去皮食用)，外食菜餚過水/過湯瀝油",
+          "肉類改選低脂部位 (雞胸、雞里肌、里肌豬排、牛腱、鯛魚、海鮮)",
+          "調味沾醬改以薄鹽醬油、和風醋、蒜泥、檸檬汁取代美乃滋與沙茶醬",
+          "建議增加水量每天3000C.C以上 (助膽汁代謝與排泄)",
+          "加強建議超慢跑40-50分/次180bpm或 早上HIIT 15分/次，每周5天",
+          "阻力運動每周2~3天(不連續)",
+          "給周計畫表紀錄，下次帶回門診(助了解體重變化與血脂追蹤)"
+        ]
+      },
+      {
+        id: "ni-protein-inadequate",
+        domain: "NI",
+        code: "NI-5.7.1",
+        name: "蛋白質攝取不足",
+        defaultE: [
+          "食物選擇管道受限 (外食單點難以補充足量蛋白質)",
+          "對於蛋白質食物份量之食物與營養相關知識不足",
+          "減重期間過度節食而刻意避開豆魚蛋肉類",
+          "素食飲食搭配不全且未補充高生物價蛋白",
+          "女性或長者咀嚼習慣偏軟質澱粉，忽略肉類攝取",
+          "誤認蔬菜水果即可提供足夠身體代謝修復所需"
+        ],
+        defaultS: [
+          "估算蛋白質攝取未達建議需求量60%",
+          "每日蛋白質攝取量 < 0.8 g/kg 體重",
+          "BIA檢測顯示骨骼肌肉量流失",
+          "減重期間飽足感不足、易頻繁飢餓",
+          "口述飲食紀錄顯示蛋白質來源單一且份量過低",
+          "伴隨掉髮、指甲易斷或精神疲倦"
+        ],
+        defaultPlans: [
+          "蛋白質攝取目標調升至 1.2~1.5 g/kg/天，每餐至少攝取 1 掌心大小優質蛋白質 (豆魚蛋肉)",
+          "早餐與點心各補充一份無糖高纖豆漿或希臘優格 (補足20-25g蛋白質缺口)",
+          "阻力運動每周2~3天(不連續，運動後30分鐘內立即補充蛋白質以利肌肉合成)",
+          "建議增加水量每天3000C.C以上 (協助高蛋白代謝產物排出)",
+          "加強建議超慢跑40-50分/次180bpm或 早上HIIT 15分/次，每周5天",
+          "給周計畫表紀錄，下次帶回門診(助了解體重變化與肌肉重保全)"
+        ]
+      },
+      {
+        id: "ni-fiber-inadequate",
+        domain: "NI",
+        code: "NI-5.8.5",
+        name: "膳食纖維攝入不足",
+        defaultE: [
+          "蔬菜攝取每天少於3份",
+          "極少吃全穀雜糧類 (習慣純白精緻澱粉)",
+          "外食缺乏蔬菜供應選項或單點成本考量",
+          "飲食挑食偏好肉類與甜食，排斥蔬菜口感",
+          "減重期間總進食量銳減，連帶纖維攝取驟降",
+          "對膳食纖維維持腸道菌相與飽足感之重要性認知不足"
+        ],
+        defaultS: [
+          "膳食纖維攝取未達建議量50% (每日估算 < 12g)",
+          "減重期間飽足感低、容易產生強烈飢餓感",
+          "常態性排便困難或慣性便秘 (≥ 3天未排便)",
+          "糞便乾硬且排便費力",
+          "血膽固醇與餐後血糖波動偏大",
+          "腸道菌相失衡伴隨腹脹問題"
+        ],
+        defaultPlans: [
+          "每餐蔬菜攝取達 1.5 拳頭量 (至少深綠色蔬菜1份)，外食主動加點燙青菜/生菜盒",
+          "主食全面更換為高纖全穀 (糙米飯、紫米、燕麥片、熟地瓜連皮吃)",
+          "建議增加水量每天3000C.C以上 (高纖飲食若缺水易加劇糞便乾硬便秘)",
+          "每日可額外添加奇亞籽 10g 或洋車前子粉於溫水中飲用，軟化糞便",
+          "加強建議超慢跑40-50分/次180bpm或 早上HIIT 15分/次，每周5天 (刺激腸胃道蠕動)",
+          "阻力運動每周2~3天(不連續)",
+          "給周計畫表紀錄，下次帶回門診(助了解體重變化與排便頻率)"
+        ]
+      },
+
+      // ==========================================
+      // [NC 領域] 臨床領域 (包含過重與過輕/體重下降)
+      // ==========================================
+      {
+        id: "nc-weight-excess",
+        domain: "NC",
+        code: "NC-3.3",
+        name: "體重過重/肥胖",
+        defaultE: [
+          "攝食型態異常",
+          "熱量攝取過量",
+          "食物與營養相關知識不足",
+          "活動量過低",
+          "長時間靜態久坐工作型態",
+          "代謝率隨年齡下降且未調整熱量攝入",
+          "極端節食後的代償性報復進食"
+        ],
+        defaultS: [
+          "體重過重 (BMI=26.5)",
+          "輕度肥胖 (BMI=28.5)",
+          "中度肥胖 (BMI=31.5)",
+          "重度肥胖 (BMI=35)",
+          "熱量攝取過量:達建議需求量150%",
+          "體能活動頻率少、持續性差 (<3次/週、<30分/次)",
+          "體脂肪率超過標準值 (男性>25%、女性>30%)",
+          "每週食用油炸物或精緻高糖食品頻率 > 3 次"
+        ],
+        defaultPlans: [
+          "建議增加水量每天3000C.C以上 (晨起500c.c.、三餐前各500c.c.抑制多餘飢餓)",
+          "加強建議超慢跑40-50分/次180bpm或 早上HIIT 15分/次，每周5天",
+          "阻力運動每周2~3天(不連續，深蹲/伏地挺身/彈力帶，提升基礎代謝)",
+          "落實「211餐盤」：蔬菜2份:蛋白質1份:全穀1份，每日總熱量設定赤字 300-500 kcal",
+          "嚴禁含糖手搖飲與每週油炸物限 1 次以內",
+          "給周計畫表紀錄，下次帶回門診(助了解體重變化與體脂下降幅度)"
+        ]
+      },
+      {
+        id: "nc-weight-underweight",
+        domain: "NC",
+        code: "NC-3.1",
+        name: "體重過輕 (Underweight)",
+        defaultE: [
+          "過度追求苗條體態，進行極端且不合理之熱量限制",
+          "慢性生理性食慾低落或伴隨情緒性進食障礙",
+          "消化道吸收不良或長年腸胃激躁機能受損",
+          "未補足因高代謝率或大量運動消耗之熱量赤字",
+          "長期飲食單一偏食，熱量與微量營養素缺乏",
+          "年長者肌少症伴隨進食量銳減"
+        ],
+        defaultS: [
+          "體重過輕 (BMI < 18.5)",
+          "骨骼肌質量 (SMM) 顯著低於正常標準 (肌少症風險)",
+          "體脂肪率極低 (女性<16%、男性<10%)",
+          "日常經常感到畏寒、頭暈、疲勞虛弱無力",
+          "女性伴隨月經不規則甚至閉經 (功能性下視丘停經)",
+          "每日總熱量攝取未達估算需要量 70%"
+        ],
+        defaultPlans: [
+          "設定健康增重目標：每週平穩增加 0.25~0.5 kg，預防再餵食症候群",
+          "採高營養密度進食：正餐主食不過度飽脹，增加良質堅果、橄欖油、酪梨與全脂奶",
+          "每餐確保優質蛋白質達 1-1.5 掌心，搭配漸進式阻力重訓促進骨骼肌肥大",
+          "每日餐間固定增加 2 份富含蛋白質之點心 (蒸蛋、毛豆漿、堅果乳酪)",
+          "水分補充適量 (2000-2500 C.C.)，避開用餐前 30 分鐘灌水以維持食慾",
+          "給周計畫表紀錄，下次帶回門診(助了解體重回升曲線與肌肉量變化)"
+        ]
+      },
+      {
+        id: "nc-involuntary-weight-loss",
+        domain: "NC",
+        code: "NC-3.2",
+        name: "非預期的體重減輕 (Involuntary weight loss)",
+        defaultE: [
+          "不當或過量使用減重減肥藥物引發過度食慾抑制",
+          "因嚴重生活壓力或情緒焦慮導致無法正常進食",
+          "潛在代謝疾病消耗 (如甲亢、糖尿病高滲透壓失衡)",
+          "未意識到熱量攝取嚴重赤字 (<50% 每日需求量)",
+          "近期重大手術、感染或慢性發炎消耗體蛋白",
+          "極端減肥後無法恢復常態飲食功能"
+        ],
+        defaultS: [
+          "1 個月內體重非自主減輕 > 5%，或 3 個月內減輕 > 7.5%",
+          "體重過輕 (BMI < 18.5)",
+          "InBody 身體組成顯示骨骼肌大量流失伴隨基礎代謝驟降",
+          "熱量估算攝取嚴重未達需求量 60%",
+          "極易疲倦無力、常有姿勢性低血壓",
+          "口述食量驟降至過往 1/3 以下"
+        ],
+        defaultPlans: [
+          "全面評估減重藥物劑量與飲食交互作用，必要時建議回診主治醫師調整藥物",
+          "少量多餐高熱量密度供應 (每日 5-6 餐)，優先維持體重穩定止跌",
+          "給予濃縮口服營養補充品 (ONS)，每日 1-2 罐補充 300-600 kcal",
+          "暫停高耗能長跑與HIIT運動，改以低強度伸展與輕度阻力運動維護肌力",
+          "給周計畫表紀錄，每週量測 2 次晨起空腹體重，下次帶回門診追蹤"
+        ]
+      }
+    ];
+
+    /**
+     * 常用主訴與客觀資料片語庫 (點選即帶入)
+     */
+    const CCO_QUICK_PHRASES = [
+      "三餐進食時間不固定",
+      "三餐進食時間固定",
+      "以外食居多(超商/便當/熱炒)",
+      "多吃肉類食物",
+      "多食高油脂食物(油炸/肥肉)",
+      "少蔬菜(<1-2份/天)",
+      "少水果(<1份/天)",
+      "晚餐進食時間過晚(>20:30)",
+      "有夜間進食/吃宵夜習慣",
+      "水分攝取不足(<1500ml/天)",
+      "每日至少1杯含糖手搖飲",
+      "壓力大時有情緒性暴食傾向",
+      "極端節食後代償性報復進食",
+      "目前使用減重藥物(GLP-1 RA)，食慾明顯受抑",
+      "抽血檢查：TG過高、HbA1c偏高",
+      "超音波檢查：輕度至中度脂肪肝",
+      "InBody檢測：體脂超標、骨骼肌肉量流失"
+    ];
+
+    // 自訂教案持久化讀取
+    let PES_DATABASE = loadCustomizedPES();
+
+    function loadCustomizedPES() {
+      try {
+        const stored = localStorage.getItem('PES_CUSTOM_PLANS_V1');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return BASE_PES_DATABASE.map(item => {
+            if (parsed[item.id]) {
+              return { ...item, defaultPlans: parsed[item.id] };
+            }
+            return item;
+          });
+        }
+      } catch (e) {
+        console.error('Failed to load customized plans from localStorage', e);
+      }
+      return JSON.parse(JSON.stringify(BASE_PES_DATABASE));
+    }
+
+    // 權限與密碼狀態
+    const DEFAULT_MASTER_PASSWORD = "19920827";
+    let masterPassword = localStorage.getItem('APP_MASTER_PASSWORD') || DEFAULT_MASTER_PASSWORD;
+    let isOwnerMode = true; // 預設擁有者
+
+    // 檢查網址參數 ?mode=readonly
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('mode') === 'readonly') {
+      isOwnerMode = false;
+    }
+
+    // 目前互動狀態
+    let currentDomain = 'ALL';
+    let currentP = PES_DATABASE[0]; // 預設自選 P1: NB-1.1
+    let currentP2 = PES_DATABASE[2]; // 預設第二診斷 P2: NB-2.1 (體能活動不足)
+    let isPES2Enabled = true;
+
+    let selectedEs = new Set();
+    let selectedSs = new Set();
+    let selectedPlans = new Set();
+    let customEList = [];
+    let customSList = [];
+    let customPlanList = [];
+
+    // 體位狀態
+    let patientAssessment = {
+      height: 160,
+      weight: 58.6,
+      bmi: '22.9',
+      status: '正常',
+      statement: '1.體位評估:正常,BMI：22.9'
+    };
+
+    // 彈跳視窗教案暫存
+    let tempModalPlans = [];
+
+    // DOM 元素快取
+    const pCardsContainer = document.getElementById('pCardsContainer');
+    const eChipsContainer = document.getElementById('eChipsContainer');
+    const sChipsContainer = document.getElementById('sChipsContainer');
+    const planChipsContainer = document.getElementById('planChipsContainer');
+    const ccoChipsContainer = document.getElementById('ccoChipsContainer');
+    const editorP = document.getElementById('editorP');
+    const editorE = document.getElementById('editorE');
+    const editorS = document.getElementById('editorS');
+    const editorP2 = document.getElementById('editorP2');
+    const editorE2 = document.getElementById('editorE2');
+    const editorS2 = document.getElementById('editorS2');
+    const editorPlan = document.getElementById('editorPlan');
+    const pCodeLabel = document.getElementById('pCodeLabel');
+    const previewClinicFormat = document.getElementById('previewClinicFormat');
+    const previewFormatA = document.getElementById('previewFormatA');
+
+    // 頁面載入初始化
+    window.onload = function() {
+      applyPermissionUI();
+      lucide.createIcons();
+      calcBMI();
+      renderCCOChips();
+      initP2Selector();
+      selectP(PES_DATABASE[0].id);
+      setupShareUrl();
+
+      // 監聽文字框即時輸入同步預覽
+      editorP.addEventListener('input', updateLivePreview);
+      editorE.addEventListener('input', updateLivePreview);
+      editorS.addEventListener('input', updateLivePreview);
+      editorP2.addEventListener('input', updateLivePreview);
+      editorE2.addEventListener('input', updateLivePreview);
+      editorS2.addEventListener('input', updateLivePreview);
+      editorPlan.addEventListener('input', updateLivePreview);
+    };
+
+    /**
+     * 初始化 P2 選擇下拉選單
+     */
+    function initP2Selector() {
+      const sel = document.getElementById('p2Selector');
+      if (!sel) return;
+      sel.innerHTML = '';
+      PES_DATABASE.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.id;
+        opt.textContent = `${item.code} ${item.name}`;
+        sel.appendChild(opt);
+      });
+      sel.value = currentP2.id;
+    }
+
+    function onP2SelectChange(id) {
+      const found = PES_DATABASE.find(item => item.id === id);
+      if (found) {
+        currentP2 = found;
+        editorP2.value = found.name;
+        editorE2.value = found.defaultE[0] || '';
+        editorS2.value = found.defaultS[0] || '';
+        renderPlanChips();
+        updateLivePreview();
+      }
+    }
+
+    function togglePES2State() {
+      isPES2Enabled = document.getElementById('enablePES2Checkbox').checked;
+      renderPlanChips();
+      updateLivePreview();
+    }
+
+    /**
+     * 渲染主訴常用片語標籤 (點選即帶入)
+     */
+    function renderCCOChips() {
+      ccoChipsContainer.innerHTML = '';
+      CCO_QUICK_PHRASES.forEach(phrase => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'px-2 py-0.5 text-[11px] bg-white hover:bg-indigo-50 hover:text-indigo-900 text-slate-700 rounded-md border border-slate-200 transition-colors shadow-2xs text-left';
+        btn.innerHTML = `+ ${escapeHtml(phrase)}`;
+        btn.onclick = () => appendCCOPhrase(phrase);
+        ccoChipsContainer.appendChild(btn);
+      });
+    }
+
+    function appendCCOPhrase(phrase) {
+      const textarea = document.getElementById('chiefComplaintInput');
+      const current = textarea.value.trim();
+      if (!current) {
+        textarea.value = phrase;
+      } else {
+        textarea.value = current + '；' + phrase;
+      }
+      updateLivePreview();
+      showToast('已帶入常用片語');
+    }
+
+    /**
+     * AI 智慧雙診斷推論引擎
+     * 分析對話長文與片語，自動避開 P1 並找出最適合的第二營養診斷 (P2)
+     */
+    function triggerAIDiagnosis() {
+      const rawDialog = document.getElementById('rawDialogInput').value.toLowerCase();
+      const ccText = document.getElementById('chiefComplaintInput').value.toLowerCase();
+      const combined = `${rawDialog} ${ccText}`;
+
+      let bestMatch = null;
+      let matchedReasonE = '';
+      let matchedSymptomS = '';
+
+      // 智慧規則匹配權重
+      if (currentP.id !== 'nb-physical-inactivity' && (combined.includes('久坐') || combined.includes('不運動') || combined.includes('沒時間運動') || combined.includes('步數') || combined.includes('活動量') || combined.includes('靜態'))) {
+        bestMatch = PES_DATABASE.find(p => p.id === 'nb-physical-inactivity');
+        matchedReasonE = '長時間靜態工作型態 (如長時間久坐辦公室)';
+        matchedSymptomS = '體能活動頻率少、持續性差 (<3次/週、<30分/次)；日常步數未達建議';
+      } else if (currentP.id !== 'ni-fiber-inadequate' && (combined.includes('少蔬') || combined.includes('便秘') || combined.includes('排便') || combined.includes('青菜') || combined.includes('纖維') || combined.includes('菜吃很少'))) {
+        bestMatch = PES_DATABASE.find(p => p.id === 'ni-fiber-inadequate');
+        matchedReasonE = '蔬菜攝取每天少於3份、極少吃全穀雜糧類';
+        matchedSymptomS = '膳食纖維攝取未達建議量50%、常態性便秘排便困難';
+      } else if (currentP.id !== 'ni-fat-excess' && (combined.includes('炸') || combined.includes('肥肉') || combined.includes('油炸') || combined.includes('高油') || combined.includes('脂肪肝') || combined.includes('血脂') || combined.includes('tg'))) {
+        bestMatch = PES_DATABASE.find(p => p.id === 'ni-fat-excess');
+        matchedReasonE = '偏好油炸食物 (炸排骨/炸雞排) 與高脂肉類部位';
+        matchedSymptomS = '每週食用油炸物 > 3 次；血脂肪異常或超音波脂肪肝';
+      } else if (currentP.id !== 'ni-carb-excess' && (combined.includes('手搖') || combined.includes('含糖') || combined.includes('麵包') || combined.includes('甜點') || combined.includes('蛋糕') || combined.includes('澱粉') || combined.includes('紅茶') || combined.includes('奶茶'))) {
+        bestMatch = PES_DATABASE.find(p => p.id === 'ni-carb-excess');
+        matchedReasonE = '個人飲食喜好偏差 (偏好含糖紅茶、手搖杯與精緻甜點糕餅)';
+        matchedSymptomS = '每天至少飲用 1 杯以上含糖手搖杯；醣類攝取高於建議量';
+      } else if (currentP.id !== 'ni-oral-inadequate' && (combined.includes('glp-1') || combined.includes('針劑') || combined.includes('抑制食慾') || combined.includes('吃不下') || combined.includes('噁心') || combined.includes('胃口差'))) {
+        bestMatch = PES_DATABASE.find(p => p.id === 'ni-oral-inadequate');
+        matchedReasonE = '減重藥物 (GLP-1 RA) 作用導致胃口低下且正餐進食總量不足';
+        matchedSymptomS = '估算熱量攝取未達建議需求量60%、進食份量低於正常餐之 1/2';
+      } else if (currentP.id !== 'ni-protein-inadequate' && (combined.includes('肌肉') || combined.includes('inbody') || combined.includes('蛋白質') || combined.includes('掉髮') || combined.includes('肉吃很少'))) {
+        bestMatch = PES_DATABASE.find(p => p.id === 'ni-protein-inadequate');
+        matchedReasonE = '外食單點難以補充足量蛋白質，減重期間刻意避開肉類';
+        matchedSymptomS = 'BIA檢測顯示骨骼肌肉量流失；蛋白質攝取估算低於 0.8g/kg';
+      } else if (currentP.id !== 'nb-food-choice-undesirable') {
+        bestMatch = PES_DATABASE.find(p => p.id === 'nb-food-choice-undesirable');
+        matchedReasonE = '外食環境限制，習慣性選擇高油高澱粉菜色';
+        matchedSymptomS = '熱量攝取達建議需求量140%、每週外食頻率高';
+      } else {
+        bestMatch = PES_DATABASE.find(p => p.id === 'nb-knowledge-deficit');
+        matchedReasonE = '未接受過飲食衛教，不確定如何將營養指南應用於外食';
+        matchedSymptomS = '口述知識不準確或不完整';
+      }
+
+      if (bestMatch) {
+        currentP2 = bestMatch;
+        isPES2Enabled = true;
+        document.getElementById('enablePES2Checkbox').checked = true;
+        document.getElementById('p2Selector').value = bestMatch.id;
+        editorP2.value = bestMatch.name;
+        editorE2.value = matchedReasonE || bestMatch.defaultE[0];
+        editorS2.value = matchedSymptomS || bestMatch.defaultS[0];
+
+        renderPlanChips();
+        updateLivePreview();
+        showToast(`AI 已成功依主訴推論第二診斷：${bestMatch.name}`);
+      }
+    }
+
+    function autoSuggestAI() {
+      // 供輸入長文時輔助
+    }
+
+    /**
+     * 權限狀態控制與 UI 切換
+     */
+    function applyPermissionUI() {
+      const roleBadge = document.getElementById('roleBadge');
+      const readonlyBanner = document.getElementById('readonlyBanner');
+      const currentModeStatusText = document.getElementById('currentModeStatusText');
+      const toggleModeBtn = document.getElementById('toggleModeBtn');
+
+      if (isOwnerMode) {
+        roleBadge.className = 'text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1';
+        roleBadge.innerHTML = '<i data-lucide="shield-check" class="w-3 h-3"></i> 擁有者模式';
+        readonlyBanner.classList.add('hidden');
+        if (currentModeStatusText) {
+          currentModeStatusText.className = 'text-xs font-semibold text-emerald-600 flex items-center gap-1 mt-0.5';
+          currentModeStatusText.innerHTML = '<i data-lucide="check-circle" class="w-3.5 h-3.5"></i> 擁有者完整權限模式';
+        }
+        if (toggleModeBtn) toggleModeBtn.textContent = '切換為唯讀訪客';
+
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.remove('hidden'));
+        document.querySelectorAll('.admin-only-flex').forEach(el => el.classList.remove('hidden'));
+      } else {
+        roleBadge.className = 'text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1';
+        roleBadge.innerHTML = '<i data-lucide="eye" class="w-3 h-3"></i> 訪客唯讀模式';
+        readonlyBanner.classList.remove('hidden');
+        if (currentModeStatusText) {
+          currentModeStatusText.className = 'text-xs font-semibold text-amber-600 flex items-center gap-1 mt-0.5';
+          currentModeStatusText.innerHTML = '<i data-lucide="lock" class="w-3.5 h-3.5"></i> 唯讀訪客保護模式';
+        }
+        if (toggleModeBtn) toggleModeBtn.textContent = '解鎖為擁有者';
+
+        document.querySelectorAll('.admin-only').forEach(el => el.classList.add('hidden'));
+        document.querySelectorAll('.admin-only-flex').forEach(el => el.classList.add('hidden'));
+      }
+      lucide.createIcons();
+    }
+
+    function toggleAppMode() {
+      if (isOwnerMode) {
+        isOwnerMode = false;
+        applyPermissionUI();
+        showToast('已切換為唯讀訪客模式');
+      } else {
+        promptUnlockAdmin();
+      }
+    }
+
+    function promptUnlockAdmin() {
+      const pwd = window.prompt('請輸入擁有者密碼以解鎖管理權限：');
+      if (pwd === null) return;
+      if (pwd === masterPassword) {
+        isOwnerMode = true;
+        applyPermissionUI();
+        showToast('解鎖成功！已進入擁有者模式');
+      } else {
+        showToast('密碼錯誤！無法解鎖管理權限');
+      }
+    }
+
+    function setupShareUrl() {
+      const baseUrl = window.location.href.split('?')[0];
+      const readonlyUrl = `${baseUrl}?mode=readonly`;
+      const input = document.getElementById('readonlyShareUrl');
+      if (input) input.value = readonlyUrl;
+    }
+
+    function copyReadonlyShareLink() {
+      const input = document.getElementById('readonlyShareUrl');
+      if (!input) return;
+      executeCopy(input.value, '已複製唯讀分享連結！對方將無法修改教案庫');
+    }
+
+    function updateMasterPassword() {
+      const newPwd = document.getElementById('newMasterPasswordInput').value.trim();
+      if (!newPwd || newPwd.length < 4) {
+        showToast('密碼長度請至少輸入 4 碼');
+        return;
+      }
+      masterPassword = newPwd;
+      localStorage.setItem('APP_MASTER_PASSWORD', masterPassword);
+      document.getElementById('newMasterPasswordInput').value = '';
+      showToast('擁有者解鎖密碼已成功變更！');
+    }
+
+    function openPermissionModal() {
+      document.getElementById('permissionModal').classList.remove('hidden');
+      document.getElementById('permissionModalBackdrop').classList.remove('hidden');
+      setupShareUrl();
+    }
+
+    function closePermissionModal() {
+      document.getElementById('permissionModal').classList.add('hidden');
+      document.getElementById('permissionModalBackdrop').classList.add('hidden');
+    }
+
+    /**
+     * 分類標籤切換 (NB / NI / NC / ALL)
+     */
+    function setDomainFilter(domain) {
+      currentDomain = domain;
+      ['ALL', 'NB', 'NI', 'NC'].forEach(d => {
+        const btn = document.getElementById('filterDomain' + d);
+        if (d === domain) {
+          btn.className = 'px-2.5 py-1 rounded-md font-bold text-brand-800 bg-white shadow-xs';
+        } else {
+          btn.className = 'px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900';
+        }
+      });
+      filterPList();
+    }
+
+    function filterPList() {
+      const keyword = document.getElementById('pSearchInput').value.trim().toLowerCase();
+      renderPCards(keyword);
+    }
+
+    /**
+     * 渲染 P 診斷卡片
+     */
+    function renderPCards(keyword = '') {
+      pCardsContainer.innerHTML = '';
+      const filtered = PES_DATABASE.filter(item => {
+        const matchesDomain = (currentDomain === 'ALL') || (item.domain === currentDomain);
+        const matchesSearch = !keyword || item.name.toLowerCase().includes(keyword) || item.code.toLowerCase().includes(keyword);
+        return matchesDomain && matchesSearch;
+      });
+
+      if (filtered.length === 0) {
+        pCardsContainer.innerHTML = '<div class="col-span-2 text-center py-6 text-xs text-slate-400">查無相符的營養診斷問題 (P)</div>';
+        return;
+      }
+
+      filtered.forEach(p => {
+        const isSelected = currentP && currentP.id === p.id;
+        const card = document.createElement('div');
+        
+        let badgeColor = 'bg-slate-100 text-slate-700';
+        if (p.domain === 'NB') badgeColor = 'bg-teal-50 text-teal-800 border-teal-200';
+        if (p.domain === 'NI') badgeColor = 'bg-indigo-50 text-indigo-800 border-indigo-200';
+        if (p.domain === 'NC') badgeColor = 'bg-amber-50 text-amber-800 border-amber-200';
+
+        card.className = `cursor-pointer p-3 rounded-xl border text-left transition-all relative ${
+          isSelected 
+            ? 'bg-brand-50/90 border-brand-600 ring-2 ring-brand-500/25 shadow-xs' 
+            : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/70'
+        }`;
+        card.onclick = () => selectP(p.id);
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between">
+            <span class="text-[11px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+              isSelected ? 'bg-brand-700 text-white border-brand-700' : badgeColor
+            }">${p.code}</span>
+            <span class="text-[10px] font-semibold text-slate-400">
+              ${p.domain === 'NB' ? '行為環境' : p.domain === 'NI' ? '攝入領域' : '臨床領域'}
+            </span>
+          </div>
+          <div class="mt-1 text-xs sm:text-sm font-bold text-slate-800 ${isSelected ? 'text-brand-950 font-extrabold' : ''}">
+            ${p.name}
+          </div>
+        `;
+        pCardsContainer.appendChild(card);
+      });
+    }
+
+    /**
+     * 選擇營養問題 (P) 並連動帶入 E、S 與 Plan
+     */
+    function selectP(id) {
+      const found = PES_DATABASE.find(item => item.id === id);
+      if (!found) return;
+      currentP = found;
+
+      selectedEs.clear();
+      selectedSs.clear();
+      selectedPlans.clear();
+      customEList = [];
+      customSList = [];
+      customPlanList = [];
+
+      // 預設帶入第 1 個 E 與 S
+      if (currentP.defaultE.length > 0) {
+        selectedEs.add(currentP.defaultE[0]);
+      }
+      if (currentP.defaultS.length > 0) {
+        selectedSs.add(currentP.defaultS[0]);
+      }
+
+      // 預設帶入推薦計畫 (融合 P1 與 P2)
+      if (currentP.defaultPlans && currentP.defaultPlans.length > 0) {
+        const count = Math.min(3, currentP.defaultPlans.length);
+        for (let i = 0; i < count; i++) {
+          selectedPlans.add(currentP.defaultPlans[i]);
+        }
+      }
+      if (isPES2Enabled && currentP2 && currentP2.defaultPlans) {
+        if (currentP2.defaultPlans[0]) selectedPlans.add(currentP2.defaultPlans[0]);
+      }
+
+      editorP.value = currentP.name;
+      pCodeLabel.textContent = currentP.code;
+
+      renderPCards(document.getElementById('pSearchInput').value.trim().toLowerCase());
+      renderEChips();
+      renderSChips();
+      renderPlanChips();
+      syncSelectionsToEditors();
+    }
+
+    /**
+     * 渲染 E 標籤 (點選即帶入)
+     */
+    function renderEChips() {
+      eChipsContainer.innerHTML = '';
+      if (!currentP) return;
+
+      const allOptions = [...currentP.defaultE, ...customEList];
+
+      allOptions.forEach((eText, index) => {
+        const isChecked = selectedEs.has(eText);
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+          isChecked 
+            ? 'bg-amber-600 text-white border-amber-600 shadow-xs' 
+            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+        }`;
+        
+        chip.innerHTML = `
+          <span>${isChecked ? '✓ ' : '+ '}${escapeHtml(eText)}</span>
+          ${(isOwnerMode && customEList.includes(eText)) ? `<span onclick="removeCustomE('${escapeHtml(eText)}', event)" class="hover:text-red-300 ml-1">×</span>` : ''}
+        `;
+
+        chip.onclick = () => {
+          if (selectedEs.has(eText)) {
+            selectedEs.delete(eText);
+          } else {
+            selectedEs.add(eText);
+          }
+          renderEChips();
+          syncSelectionsToEditors();
+        };
+
+        eChipsContainer.appendChild(chip);
+      });
+    }
+
+    /**
+     * 渲染 S 標籤 (點選即帶入)
+     */
+    function renderSChips() {
+      sChipsContainer.innerHTML = '';
+      if (!currentP) return;
+
+      const allOptions = [...currentP.defaultS, ...customSList];
+
+      allOptions.forEach((sText, index) => {
+        const isChecked = selectedSs.has(sText);
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+          isChecked 
+            ? 'bg-blue-600 text-white border-blue-600 shadow-xs' 
+            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+        }`;
+        
+        chip.innerHTML = `
+          <span>${isChecked ? '✓ ' : '+ '}${escapeHtml(sText)}</span>
+          ${(isOwnerMode && customSList.includes(sText)) ? `<span onclick="removeCustomS('${escapeHtml(sText)}', event)" class="hover:text-red-300 ml-1">×</span>` : ''}
+        `;
+
+        chip.onclick = () => {
+          if (selectedSs.has(sText)) {
+            selectedSs.delete(sText);
+          } else {
+            selectedSs.add(sText);
+          }
+          renderSChips();
+          syncSelectionsToEditors();
+        };
+
+        sChipsContainer.appendChild(chip);
+      });
+    }
+
+    /**
+     * 渲染 營養計畫 (Plan) 標籤 (智慧合併 P1 與 P2 處方)
+     */
+    function renderPlanChips() {
+      planChipsContainer.innerHTML = '';
+      if (!currentP) return;
+
+      const p1Plans = currentP.defaultPlans || [];
+      const p2Plans = (isPES2Enabled && currentP2 && currentP2.defaultPlans) ? currentP2.defaultPlans : [];
+
+      // 合併並去重
+      const combinedPlanOptions = Array.from(new Set([...p1Plans, ...p2Plans, ...customPlanList]));
+
+      combinedPlanOptions.forEach((planText, index) => {
+        const isChecked = selectedPlans.has(planText);
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium cursor-pointer transition-all ${
+          isChecked 
+            ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs' 
+            : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
+        }`;
+        
+        chip.innerHTML = `
+          <span>${isChecked ? '✓ ' : '+ '}${escapeHtml(planText)}</span>
+          ${(isOwnerMode && customPlanList.includes(planText)) ? `<span onclick="removeCustomPlan('${escapeHtml(planText)}', event)" class="hover:text-red-300 ml-1">×</span>` : ''}
+        `;
+
+        chip.onclick = () => {
+          if (selectedPlans.has(planText)) {
+            selectedPlans.delete(planText);
+          } else {
+            selectedPlans.add(planText);
+          }
+          renderPlanChips();
+          syncSelectionsToEditors();
+        };
+
+        planChipsContainer.appendChild(chip);
+      });
+    }
+
+    /**
+     * 彈跳視窗：修改與管理當前 P 的教案庫
+     */
+    function openPlanManagerModal() {
+      if (!isOwnerMode) {
+        showToast('無編輯權限！唯讀訪客無法修改教案庫');
+        return;
+      }
+      if (!currentP) return;
+
+      document.getElementById('modalCurrentPName').textContent = `${currentP.code} ${currentP.name}`;
+      tempModalPlans = [...(currentP.defaultPlans || [])];
+      renderModalPlanItems();
+
+      document.getElementById('planManagerModal').classList.remove('hidden');
+      document.getElementById('planManagerModalBackdrop').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closePlanManagerModal() {
+      document.getElementById('planManagerModal').classList.add('hidden');
+      document.getElementById('planManagerModalBackdrop').classList.add('hidden');
+    }
+
+    function renderModalPlanItems() {
+      const container = document.getElementById('modalPlanItemsList');
+      container.innerHTML = '';
+
+      if (tempModalPlans.length === 0) {
+        container.innerHTML = '<div class="text-xs text-slate-400 py-4 text-center">目前無任何教案項目，請點選上方「新增一筆教案」</div>';
+        return;
+      }
+
+      tempModalPlans.forEach((planText, index) => {
+        const itemRow = document.createElement('div');
+        itemRow.className = 'flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200';
+        itemRow.innerHTML = `
+          <span class="text-xs font-mono font-bold text-slate-400 w-5 text-center">${index + 1}</span>
+          <input type="text" value="${escapeHtml(planText)}" class="modal-plan-input flex-1 text-xs px-2.5 py-1.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none" oninput="updateTempModalPlanText(${index}, this.value)">
+          <button onclick="deleteModalPlanItem(${index})" class="p-1 text-slate-400 hover:text-rose-600 rounded">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
+          </button>
+        `;
+        container.appendChild(itemRow);
+      });
+
+      lucide.createIcons();
+    }
+
+    function updateTempModalPlanText(index, val) {
+      tempModalPlans[index] = val;
+    }
+
+    function addNewPlanItemInModal() {
+      tempModalPlans.push('新教案：');
+      renderModalPlanItems();
+      const inputs = document.querySelectorAll('.modal-plan-input');
+      if (inputs.length > 0) {
+        inputs[inputs.length - 1].focus();
+      }
+    }
+
+    function deleteModalPlanItem(index) {
+      tempModalPlans.splice(index, 1);
+      renderModalPlanItems();
+    }
+
+    function saveModalPlanChanges() {
+      if (!currentP) return;
+
+      const cleaned = tempModalPlans.map(t => t.trim()).filter(t => t.length > 0);
+      currentP.defaultPlans = cleaned;
+
+      try {
+        let stored = {};
+        const raw = localStorage.getItem('PES_CUSTOM_PLANS_V1');
+        if (raw) stored = JSON.parse(raw);
+        stored[currentP.id] = cleaned;
+        localStorage.setItem('PES_CUSTOM_PLANS_V1', JSON.stringify(stored));
+      } catch (err) {
+        console.error('Failed to save to localStorage', err);
+      }
+
+      selectedPlans.clear();
+      const count = Math.min(4, cleaned.length);
+      for (let i = 0; i < count; i++) {
+        selectedPlans.add(cleaned[i]);
+      }
+
+      renderPlanChips();
+      syncSelectionsToEditors();
+      closePlanManagerModal();
+      showToast('教案庫已成功更新並儲存！');
+    }
+
+    function restoreDefaultPlansForCurrentP() {
+      if (!currentP) return;
+      if (!window.confirm(`確定將「${currentP.name}」的教案庫還原為系統初始預設嗎？`)) return;
+
+      const base = BASE_PES_DATABASE.find(b => b.id === currentP.id);
+      if (base) {
+        currentP.defaultPlans = [...base.defaultPlans];
+        try {
+          let stored = {};
+          const raw = localStorage.getItem('PES_CUSTOM_PLANS_V1');
+          if (raw) stored = JSON.parse(raw);
+          delete stored[currentP.id];
+          localStorage.setItem('PES_CUSTOM_PLANS_V1', JSON.stringify(stored));
+        } catch (e) {}
+
+        tempModalPlans = [...currentP.defaultPlans];
+        renderModalPlanItems();
+        showToast('已還原為初始教案');
+      }
+    }
+
+    /**
+     * 自訂 E / S / Plan 新增與移除
+     */
+    function addCustomE() {
+      if (!isOwnerMode) {
+        showToast('訪客唯讀模式無法新增標籤');
+        return;
+      }
+      const input = document.getElementById('customEInput');
+      const val = input.value.trim();
+      if (!val) return;
+      if (!customEList.includes(val) && !currentP.defaultE.includes(val)) {
+        customEList.push(val);
+      }
+      selectedEs.add(val);
+      input.value = '';
+      renderEChips();
+      syncSelectionsToEditors();
+    }
+
+    function removeCustomE(text, ev) {
+      ev.stopPropagation();
+      customEList = customEList.filter(item => item !== text);
+      selectedEs.delete(text);
+      renderEChips();
+      syncSelectionsToEditors();
+    }
+
+    function addCustomS() {
+      if (!isOwnerMode) {
+        showToast('訪客唯讀模式無法新增標籤');
+        return;
+      }
+      const input = document.getElementById('customSInput');
+      const val = input.value.trim();
+      if (!val) return;
+      if (!customSList.includes(val) && !currentP.defaultS.includes(val)) {
+        customSList.push(val);
+      }
+      selectedSs.add(val);
+      input.value = '';
+      renderSChips();
+      syncSelectionsToEditors();
+    }
+
+    function removeCustomS(text, ev) {
+      ev.stopPropagation();
+      customSList = customSList.filter(item => item !== text);
+      selectedSs.delete(text);
+      renderSChips();
+      syncSelectionsToEditors();
+    }
+
+    function addCustomPlan() {
+      if (!isOwnerMode) {
+        showToast('訪客唯讀模式無法新增標籤');
+        return;
+      }
+      const input = document.getElementById('customPlanInput');
+      const val = input.value.trim();
+      if (!val) return;
+      if (!customPlanList.includes(val) && !(currentP.defaultPlans || []).includes(val)) {
+        customPlanList.push(val);
+      }
+      selectedPlans.add(val);
+      input.value = '';
+      renderPlanChips();
+      syncSelectionsToEditors();
+    }
+
+    function removeCustomPlan(text, ev) {
+      ev.stopPropagation();
+      customPlanList = customPlanList.filter(item => item !== text);
+      selectedPlans.delete(text);
+      renderPlanChips();
+      syncSelectionsToEditors();
+    }
+
+    /**
+     * 同步選取標籤至右側編輯文字框
+     */
+    function syncSelectionsToEditors() {
+      editorP.value = currentP ? currentP.name : '';
+      editorE.value = Array.from(selectedEs).join('；');
+      editorS.value = Array.from(selectedSs).join('；');
+
+      if (currentP2 && !editorP2.value) {
+        editorP2.value = currentP2.name;
+        editorE2.value = currentP2.defaultE[0] || '';
+        editorS2.value = currentP2.defaultS[0] || '';
+      }
+
+      const planLines = Array.from(selectedPlans).map(item => item.startsWith('- ') ? item : `- ${item}`);
+      editorPlan.value = planLines.join('\n');
+
+      updateLivePreview();
+    }
+
+    /**
+     * 即時病歷輸出渲染 (嚴格符合格式，無 AI 字眼)
+     */
+    function updateLivePreview() {
+      const p1 = editorP.value.trim() || '食物與營養相關知識不足';
+      const e1 = editorE.value.trim() || '未接受過飲食衛教';
+      const s1 = editorS.value.trim() || '熱量攝取達建議需求量150%';
+      
+      const p2 = editorP2.value.trim() || (currentP2 ? currentP2.name : '');
+      const e2 = editorE2.value.trim() || (currentP2 ? currentP2.defaultE[0] : '');
+      const s2 = editorS2.value.trim() || (currentP2 ? currentP2.defaultS[0] : '');
+
+      let rawPlan = editorPlan.value.trim();
+      let formattedPlanBlock = '';
+      if (!rawPlan) {
+        formattedPlanBlock = '- 建議增加水量每天3000C.C以上\n- 加強建議超慢跑40-50分/次180bpm或 早上HIIT 15分/次，每周5天\n- 阻力運動每周2~3天(不連續)\n- 給周計畫表紀錄，下次帶回門診(助了解體重變化)';
+      } else {
+        const lines = rawPlan.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+        formattedPlanBlock = lines.map(line => line.startsWith('-') ? line : `- ${line}`).join('\n');
+      }
+
+      const includeCC = document.getElementById('includeCCOnExport') ? document.getElementById('includeCCOnExport').checked : true;
+      const ccVal = document.getElementById('chiefComplaintInput') ? document.getElementById('chiefComplaintInput').value.trim() : '';
+
+      let outputParts = [];
+      if (includeCC && ccVal) {
+        outputParts.push(`0.主訴/客觀資料:${ccVal}`);
+      }
+      outputParts.push(patientAssessment.statement);
+      
+      // 輸出營養診斷 (單或雙診斷排版，完全刪除 AI 標記)
+      if (isPES2Enabled && p2) {
+        outputParts.push(`2.營養診斷:\n(1) P-${p1}\n    E-${e1}\n    S-${s1}\n(2) P-${p2}\n    E-${e2}\n    S-${s2}`);
+      } else {
+        outputParts.push(`2.營養診斷:\nP-${p1}\nE-${e1}\nS-${s1}`);
+      }
+
+      outputParts.push(`3.營養計畫:\n${formattedPlanBlock}`);
+
+      const clinicOutput = outputParts.join('\n');
+      previewClinicFormat.textContent = clinicOutput;
+
+      // 備用敘述句格式
+      if (isPES2Enabled && p2) {
+        previewFormatA.textContent = `1. ${p1} 相關於 ${e1}，其表徵為 ${s1}。\n2. ${p2} 相關於 ${e2}，其表徵為 ${s2}。`;
+      } else {
+        previewFormatA.textContent = `${p1} 相關於 (related to) ${e1}，其表徵為 (as evidenced by) ${s1}。`;
+      }
+    }
+
+    /**
+     * 體位判定與計算器
+     */
+    function calcBMI() {
+      const hCm = parseFloat(document.getElementById('inputHeight').value);
+      const wKg = parseFloat(document.getElementById('inputWeight').value);
+      const bmiField = document.getElementById('calculatedBMI');
+      const badge = document.getElementById('bmiStatusBadge');
+      const summaryText = document.getElementById('assessmentSummaryText');
+
+      if (!hCm || !wKg || hCm <= 0 || wKg <= 0) {
+        bmiField.value = '--';
+        badge.textContent = '請輸入身高與體重';
+        badge.className = 'w-full text-xs font-medium py-2 px-2.5 rounded-lg text-center bg-slate-100 text-slate-600 border border-slate-200 truncate';
+        patientAssessment.statement = '1.體位評估:未定,BMI：--';
+        summaryText.textContent = patientAssessment.statement;
+        updateLivePreview();
+        return;
+      }
+
+      const hM = hCm / 100;
+      const bmiVal = (wKg / (hM * hM)).toFixed(1);
+      bmiField.value = bmiVal;
+
+      let status = '';
+      let badgeStyle = '';
+
+      if (bmiVal < 18.5) {
+        status = '體重過輕';
+        badgeStyle = 'bg-amber-100 text-amber-900 border-amber-300 font-bold';
+      } else if (bmiVal < 24.0) {
+        status = '正常';
+        badgeStyle = 'bg-emerald-100 text-emerald-900 border-emerald-300 font-bold';
+      } else if (bmiVal < 27.0) {
+        status = '體重過重';
+        badgeStyle = 'bg-amber-100 text-amber-900 border-amber-300 font-bold';
+      } else if (bmiVal < 30.0) {
+        status = '輕度肥胖';
+        badgeStyle = 'bg-orange-100 text-orange-900 border-orange-300 font-bold';
+      } else if (bmiVal < 35.0) {
+        status = '中度肥胖';
+        badgeStyle = 'bg-rose-100 text-rose-900 border-rose-300 font-bold';
+      } else {
+        status = '重度肥胖';
+        badgeStyle = 'bg-red-200 text-red-950 border-red-400 font-bold';
+      }
+
+      patientAssessment.height = hCm;
+      patientAssessment.weight = wKg;
+      patientAssessment.bmi = bmiVal;
+      patientAssessment.status = status;
+      patientAssessment.statement = `1.體位評估:${status},BMI：${bmiVal}`;
+
+      badge.textContent = `${status} (BMI: ${bmiVal})`;
+      badge.className = `w-full text-xs py-2 px-2.5 rounded-lg text-center border truncate ${badgeStyle}`;
+      summaryText.textContent = patientAssessment.statement;
+
+      updateLivePreview();
+    }
+
+    function applyBMIToSigns() {
+      const textToAppend = `${patientAssessment.status}(BMI=${patientAssessment.bmi})`;
+      if (!customSList.includes(textToAppend) && !currentP.defaultS.includes(textToAppend)) {
+        customSList.push(textToAppend);
+      }
+      selectedSs.add(textToAppend);
+      renderSChips();
+      syncSelectionsToEditors();
+      showToast(`已將「${textToAppend}」加入 S 徵候！`);
+    }
+
+    /**
+     * 複製與清空工具
+     */
+    function copyClinicFormat() {
+      const text = previewClinicFormat.textContent.trim();
+      executeCopy(text, '已複製門診病歷格式！可直接貼上病歷系統');
+    }
+
+    function copyFormatA() {
+      const text = previewFormatA.textContent.trim();
+      executeCopy(text, '已複製標準敘述句！');
+    }
+
+    function executeCopy(text, successMsg) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast(successMsg);
+      } catch (err) {
+        showToast('複製失敗，請手動反白複製');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    function clearCurrentSelection() {
+      selectedEs.clear();
+      selectedSs.clear();
+      selectedPlans.clear();
+      editorE.value = '';
+      editorS.value = '';
+      editorPlan.value = '';
+      renderEChips();
+      renderSChips();
+      renderPlanChips();
+      updateLivePreview();
+    }
+
+    function resetAll() {
+      if (!isOwnerMode) {
+        showToast('訪客唯讀模式無法重設系統');
+        return;
+      }
+      document.getElementById('inputHeight').value = '160';
+      document.getElementById('inputWeight').value = '58.6';
+      document.getElementById('chiefComplaintInput').value = '三餐進食時間不固定；以外食居多；多吃肉類食物、多食高油脂食物(油炸/肥肉)；少蔬菜(<1-2份/天)、少水果；每日至少1杯含糖手搖飲。';
+      document.getElementById('rawDialogInput').value = '';
+      calcBMI();
+      selectP(PES_DATABASE[0].id);
+      showToast('已重設為初始狀態');
+    }
+
+    let toastTimeout;
+    function showToast(msg) {
+      const toast = document.getElementById('toastMessage');
+      const toastText = document.getElementById('toastText');
+      toastText.textContent = msg;
+
+      toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-3');
+      toast.classList.add('opacity-100', 'translate-y-0');
+
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-3');
+      }, 2400);
+    }
+
+    function escapeHtml(string) {
+      return String(string).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+  </script>
+</body>
+</html>
